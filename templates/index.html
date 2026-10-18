@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MedGuide AI</title>
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
+
+  <body>
+    <main class="app">
+      <!-- Product title and live backend connection status. -->
+      <header>
+        <div>
+          <h1>✚ MedGuide AI</h1>
+          <p>Medical chatbot • Knowledge base + web research</p>
+        </div>
+        <span id="status" role="status" aria-live="polite">Checking...</span>
+      </header>
+
+      <!-- Medical-use disclaimer shown before the conversation. -->
+      <div class="notice">
+        Demo medical chatbot. For testing and informational purposes only.
+      </div>
+
+      <!-- Chat history; app.js adds user and assistant messages here. -->
+      <section id="messages" aria-label="Chat messages" aria-live="polite">
+        <article class="bot">
+          Hello! Ask a medical question, upload an image, or use the microphone. I'll cite available sources and explain uncertainty.
+        </article>
+      </section>
+
+      <!-- Preview and remove control for the currently selected image. -->
+      <div id="preview" hidden>
+        <img id="thumbnail" alt="Selected image">
+        <button id="remove" type="button">Remove image ×</button>
+      </div>
+
+      <!-- Main question form and optional image, camera, and voice controls. -->
+      <form id="chatForm">
+        <textarea
+          id="message"
+          aria-label="Medical question"
+          placeholder="Describe your symptoms or ask a question..."
+          rows="2"
+          required
+          maxlength="4000"
+        ></textarea>
+
+        <div class="toolbar">
+          <label class="action" for="image">📎 Image</label>
+          <input
+            id="image"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            hidden
+          >
+          <button class="action" id="camera" type="button">📷 Camera</button>
+          <button class="action" id="mic" type="button">🎤 Voice</button>
+          <button class="action" id="listen" type="button">🔊 Read answer</button>
+          <button id="send" type="submit">Send ➜</button>
+        </div>
+      </form>
+
+      <!-- Optional bearer-token input, used when API_TOKEN is configured. -->
+      <details>
+        <summary>API access (optional)</summary>
+        <input
+          id="token"
+          type="password"
+          aria-label="API token"
+          placeholder="API_TOKEN from .env"
+        >
+      </details>
+
+      <!-- Hidden camera elements become visible while capturing an image. -->
+      <video id="video" autoplay playsinline aria-label="Camera preview" hidden></video>
+      <div id="cameraActions" hidden>
+        <button id="snap" type="button">Capture</button>
+        <button id="closeCamera" type="button">Close camera</button>
+      </div>
+      <canvas id="canvas" hidden></canvas>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
