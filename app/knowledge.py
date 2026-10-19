@@ -88,9 +88,11 @@ def search_kb(query, top_k=5):
             matches.append(
                 {
                     "page": metadata.get("page"),
+                    # Pass through the source filename stored during ingestion.
+                    "file": metadata.get("file", "Unknown PDF"),
                     "text": document or "",
                     "score": round(score, 3),
-                    "source": "Gale Encyclopedia (2002)",
+                    "source": metadata.get("file", "Unknown PDF"),
                     "id": document_id,
                 }
             )

@@ -8,6 +8,8 @@ let recorder = null;
 let audioChunks = [];
 let cameraStream = null;
 let lastAnswer = "";
+let currentUtterance = null;
+let speechRequestId = 0;
 
 // Add the optional API token to requests that call protected endpoints.
 const headers = () => {
@@ -23,25 +25,62 @@ const headers = () => {
 
 // Add a message to the conversation and scroll it into view.
 function bubble(text, kind = "bot", sources = []) {
+  const isUser = kind === "user";
+  const row = document.createElement("div");
+  row.className = `chat-message-row ${isUser ? "user-row" : "assistant-row"}`;
+
+  const avatar = document.createElement("div");
+  avatar.className = `avatar ${isUser ? "user-avatar" : "bot-avatar"}`;
+  avatar.setAttribute("aria-hidden", "true");
+  avatar.textContent = isUser ? "●" : "🤖";
+
   const element = document.createElement("article");
-  element.className = kind;
-  element.textContent = text;
+  element.className = "message-card";
+  const messageText = document.createElement("div");
+  messageText.className = "message-text";
+  messageText.textContent = text;
+  element.appendChild(messageText);
 
   if (sources.length) {
     const sourceList = document.createElement("div");
     sourceList.className = "sources";
-    sourceList.textContent =
-      "Sources: " +
-      sources
-        .slice(0, 8)
-        .map((source) =>
-          source.type === "pdf" ? `PDF page ${source.page}` : source.url,
-        )
-        .join(" | ");
+    const label = document.createElement("strong");
+    label.className = "sources-label";
+    label.textContent = "Sources";
+    sourceList.appendChild(label);
+
+    sources.slice(0, 8).forEach((source, index) => {
+      if (source.type === "pdf") {
+        const badge = document.createElement("span");
+        badge.textContent = `Knowledge base · page ${source.page}`;
+        sourceList.appendChild(badge);
+        return;
+      }
+
+      try {
+        const url = new URL(source.url);
+        if (!["https:", "http:"].includes(url.protocol)) return;
+        const link = document.createElement("a");
+        link.href = url.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = source.title || `Web source ${index + 1}`;
+        sourceList.appendChild(link);
+      } catch {
+        // Ignore malformed URLs rather than rendering an unsafe source link.
+      }
+    });
+
     element.appendChild(sourceList);
   }
 
-  $("messages").appendChild(element);
+  const time = document.createElement("time");
+  time.className = "message-time";
+  time.dateTime = new Date().toISOString();
+  time.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  row.append(avatar, element, time);
+  $("messages").appendChild(row);
   $("messages").scrollTop = $("messages").scrollHeight;
   return element;
 }
@@ -51,15 +90,50 @@ async function check() {
   try {
     const response = await fetch("/api/health");
     const data = await response.json();
-    $("status").textContent = data.configured
-      ? "● Connected"
-      : "⚠ Configure API keys";
+    $("status").innerHTML = data.configured
+      ? '<span class="status-dot"></span> Connected'
+      : '<span class="status-dot status-warning"></span> Configure API keys';
+    $("status").classList.toggle("connected", Boolean(data.configured));
+    $("status").classList.toggle("disconnected", !data.configured);
   } catch {
-    $("status").textContent = "● Server offline";
+    $("status").innerHTML = '<span class="status-dot status-offline"></span> Server offline';
+    $("status").classList.add("disconnected");
   }
 }
 
 check();
+
+// Fill the question box from the suggested topics and keep its character count current.
+document.querySelector(".suggestion-list").addEventListener("click", (event) => {
+  const chip = event.target.closest(".prompt-chip");
+  if (!chip) return;
+  const prompts = {
+    "Explain a symptom": "Can you explain what might cause this symptom: ",
+    "Interpret test results": "Can you help me understand these test results? ",
+    "Medication questions": "I have a question about this medication: ",
+    "General health information": "I would like evidence-based information about: ",
+  };
+  $("message").value = prompts[chip.textContent] || "";
+  $("message").focus();
+  updateCharacterCount();
+});
+
+$("dismissNotice").addEventListener("click", () => {
+  $("notice").hidden = true;
+});
+
+function updateCharacterCount() {
+  $("charCount").textContent = `${$("message").value.length}/4000`;
+}
+
+$("message").addEventListener("input", updateCharacterCount);
+
+// Give the static welcome messages a local display time, matching new conversation messages.
+document.querySelectorAll(".welcome-time, .intro-time").forEach((time) => {
+  const now = new Date();
+  time.dateTime = now.toISOString();
+  time.textContent = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+});
 
 // Read a selected image as a data URL for the chat request.
 function setImage(file) {
@@ -124,21 +198,13 @@ $("chatForm").addEventListener("submit", async (event) => {
     }
 
     pendingMessage.textContent = data.answer;
+    stopReadAloud();
     lastAnswer = data.answer;
 
-    // Show the PDF pages or web URLs returned by the backend.
+    // Attach the PDF and web citations returned by the backend to this answer.
     if (data.sources?.length) {
-      const sourceList = document.createElement("div");
-      sourceList.className = "sources";
-      sourceList.textContent =
-        "Sources: " +
-        data.sources
-          .slice(0, 8)
-          .map((source) =>
-            source.type === "pdf" ? `PDF page ${source.page}` : source.url,
-          )
-          .join(" | ");
-      pendingMessage.appendChild(sourceList);
+      const replacement = bubble(data.answer, "bot", data.sources);
+      pendingMessage.parentElement.replaceWith(replacement.parentElement);
     }
 
     history.push(
@@ -266,17 +332,50 @@ $("mic").onclick = async () => {
   }
 };
 
-// Read the latest answer aloud using the browser's built-in speech engine.
-// This avoids requiring the configured model API to support a separate TTS endpoint.
+// Keep the read-aloud control in sync with the browser's speech engine.
+function setReadAloudButton(speaking) {
+  $("listenLabel").textContent = speaking ? "Stop reading" : "Read answer";
+  $("listenIcon").textContent = speaking ? "■" : "◖))";
+  $("listen").setAttribute("aria-label", speaking ? "Stop reading aloud" : "Read answer aloud");
+  $("listen").setAttribute("aria-pressed", String(speaking));
+}
+
+// Cancel any current or queued utterance immediately and reset the button.
+function stopReadAloud() {
+  speechRequestId++;
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  currentUtterance = null;
+  setReadAloudButton(false);
+}
+
+// Read the latest answer aloud; clicking again stops speech immediately.
+// This uses the browser's speech engine, so it does not require a separate TTS API call.
 $("listen").onclick = () => {
   if (!lastAnswer) return alert("Ask a question first");
   if (!("speechSynthesis" in window)) {
     return alert("Read aloud is not supported by this browser");
   }
 
-  window.speechSynthesis.cancel();
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending || currentUtterance) {
+    stopReadAloud();
+    return;
+  }
+
+  const requestId = ++speechRequestId;
   const utterance = new SpeechSynthesisUtterance(lastAnswer);
+  currentUtterance = utterance;
   utterance.lang = document.documentElement.lang || navigator.language || "en";
+  utterance.onstart = () => {
+    if (requestId === speechRequestId) setReadAloudButton(true);
+  };
+  const finishUtterance = () => {
+    if (requestId === speechRequestId) {
+      currentUtterance = null;
+      setReadAloudButton(false);
+    }
+  };
+  utterance.onend = finishUtterance;
+  utterance.onerror = finishUtterance;
   window.speechSynthesis.speak(utterance);
 };
 

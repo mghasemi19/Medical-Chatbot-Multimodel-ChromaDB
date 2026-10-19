@@ -3,85 +3,116 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MedGuide AI</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta name="theme-color" content="#e9f6fc">
+    <title>MedGuide AI — Medical chatbot</title>
+    <link rel="stylesheet" href="/static/style.css?v=2">
   </head>
-
   <body>
-    <main class="app">
-      <!-- Product title and live backend connection status. -->
-      <header>
-        <div>
-          <h1>✚ MedGuide AI</h1>
-          <p>Medical chatbot • Knowledge base + web research</p>
-        </div>
-        <span id="status" role="status" aria-live="polite">Checking...</span>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="MedGuide AI home">
+          <span class="brand-mark" aria-hidden="true"><i></i><b></b></span>
+          <span class="brand-copy">
+            <strong>MedGuide AI</strong>
+            <small>Medical chatbot <span>•</span> Knowledge base <span>•</span> Web research</small>
+          </span>
+        </a>
+        <div class="header-art" aria-hidden="true"><span>✚</span><span>＋</span></div>
+        <span id="status" class="status-pill" role="status" aria-live="polite">
+          <span class="status-dot"></span> Checking connection…
+        </span>
       </header>
 
-      <!-- Medical-use disclaimer shown before the conversation. -->
-      <div class="notice">
-        Demo medical chatbot. For testing and informational purposes only.
-      </div>
-
-      <!-- Chat history; app.js adds user and assistant messages here. -->
-      <section id="messages" aria-label="Chat messages" aria-live="polite">
-        <article class="bot">
-          Hello! Ask a medical question, upload an image, or use the microphone. I'll cite available sources and explain uncertainty.
-        </article>
-      </section>
-
-      <!-- Preview and remove control for the currently selected image. -->
-      <div id="preview" hidden>
-        <img id="thumbnail" alt="Selected image">
-        <button id="remove" type="button">Remove image ×</button>
-      </div>
-
-      <!-- Main question form and optional image, camera, and voice controls. -->
-      <form id="chatForm">
-        <textarea
-          id="message"
-          aria-label="Medical question"
-          placeholder="Describe your symptoms or ask a question..."
-          rows="2"
-          required
-          maxlength="4000"
-        ></textarea>
-
-        <div class="toolbar">
-          <label class="action" for="image">📎 Image</label>
-          <input
-            id="image"
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            hidden
-          >
-          <button class="action" id="camera" type="button">📷 Camera</button>
-          <button class="action" id="mic" type="button">🎤 Voice</button>
-          <button class="action" id="listen" type="button">🔊 Read answer</button>
-          <button id="send" type="submit">Send ➜</button>
+      <section class="chat-panel" aria-label="MedGuide conversation">
+        <div id="notice" class="notice" role="note">
+          <span class="notice-icon" aria-hidden="true">⛨</span>
+          <p>This is a demo medical chatbot. For testing and informational purposes only. Not a substitute for professional medical advice, diagnosis, or treatment.</p>
+          <button id="dismissNotice" class="dismiss-notice" type="button" aria-label="Dismiss notice">×</button>
         </div>
-      </form>
 
-      <!-- Optional bearer-token input, used when API_TOKEN is configured. -->
-      <details>
-        <summary>API access (optional)</summary>
-        <input
-          id="token"
-          type="password"
-          aria-label="API token"
-          placeholder="API_TOKEN from .env"
-        >
-      </details>
+        <section id="messages" class="messages" aria-label="Chat messages" aria-live="polite">
+          <div class="message-row assistant-row welcome-row">
+            <div class="avatar bot-avatar" aria-hidden="true">🤖</div>
+            <article class="message-card welcome-card">
+              <h2>Hello! I’m MedGuide AI</h2>
+              <p>Ask a medical question, upload an image, or use the microphone. I’ll cite reliable sources and explain uncertainty where it exists.</p>
+              <div class="feature-grid" aria-label="What this assistant offers">
+                <div class="feature-item"><span>▤</span>Evidence-based<br>information</div>
+                <div class="feature-item"><span>⌕</span>Web research<br>&amp; knowledge base</div>
+                <div class="feature-item"><span>⛨</span>Clear source citations</div>
+                <div class="feature-item"><span>☷</span>Explains uncertainty</div>
+              </div>
+            </article>
+            <time class="message-time welcome-time"></time>
+          </div>
 
-      <!-- Hidden camera elements become visible while capturing an image. -->
-      <video id="video" autoplay playsinline aria-label="Camera preview" hidden></video>
-      <div id="cameraActions" hidden>
-        <button id="snap" type="button">Capture</button>
-        <button id="closeCamera" type="button">Close camera</button>
-      </div>
-      <canvas id="canvas" hidden></canvas>
+          <div class="message-row assistant-row intro-row">
+            <div class="avatar bot-avatar" aria-hidden="true">🤖</div>
+            <article class="message-card intro-card">
+              <p>Hi there! 👋</p>
+              <p>I’m MedGuide AI, a medical assistant designed to provide evidence-based information, help you understand health topics, and answer your medical questions. You can type a question, upload an image (such as a skin rash or lab report), or use voice input. I’ll do my best to give clear, helpful information and cite reliable sources.</p>
+              <p>How can I help you today?</p>
+              <div class="suggestions">
+                <strong><span aria-hidden="true">♧</span> Common things you can ask</strong>
+                <div class="suggestion-list">
+                  <button type="button" class="prompt-chip">Explain a symptom</button>
+                  <button type="button" class="prompt-chip">Interpret test results</button>
+                  <button type="button" class="prompt-chip">Medication questions</button>
+                  <button type="button" class="prompt-chip">General health information</button>
+                </div>
+              </div>
+            </article>
+            <aside class="example-sources" aria-label="Example medical references">
+              <div class="sources-heading"><strong><span aria-hidden="true">▤</span> Example sources</strong><span>Trusted references</span></div>
+              <a href="https://www.nih.gov/" target="_blank" rel="noopener noreferrer"><span class="source-symbol">NIH</span><span>National Institutes of Health<small>nih.gov</small></span><b aria-hidden="true">↗</b></a>
+              <a href="https://www.who.int/" target="_blank" rel="noopener noreferrer"><span class="source-symbol who-symbol">✚</span><span>World Health Organization<small>who.int</small></span><b aria-hidden="true">↗</b></a>
+              <a href="https://www.cdc.gov/" target="_blank" rel="noopener noreferrer"><span class="source-symbol">CDC</span><span>Centers for Disease Control<small>cdc.gov</small></span><b aria-hidden="true">↗</b></a>
+              <a href="https://www.uptodate.com/" target="_blank" rel="noopener noreferrer"><span class="source-symbol book-symbol">▤</span><span>UpToDate (clinical reference)<small>uptodate.com</small></span><b aria-hidden="true">↗</b></a>
+            </aside>
+            <time class="message-time intro-time"></time>
+          </div>
+        </section>
+
+        <div id="preview" class="image-preview" hidden>
+          <img id="thumbnail" alt="Selected image preview">
+          <button id="remove" type="button" class="remove-image">Remove image <span aria-hidden="true">×</span></button>
+        </div>
+
+        <form id="chatForm" class="composer">
+          <div class="input-wrap">
+            <textarea id="message" aria-label="Medical question" placeholder="Ask a medical question, upload an image, or use the microphone…" rows="2" required maxlength="4000"></textarea>
+            <span id="charCount" class="char-count">0/4000</span>
+          </div>
+          <div class="composer-toolbar">
+            <div class="media-actions">
+              <label class="action-button" for="image"><span aria-hidden="true">▧</span> Image</label>
+              <input id="image" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+              <button class="action-button" id="camera" type="button"><span aria-hidden="true">▣</span> Camera</button>
+              <button class="action-button" id="mic" type="button"><span aria-hidden="true">♩</span> Voice</button>
+              <button class="action-button" id="listen" type="button" aria-label="Read answer aloud">
+                <span id="listenIcon" aria-hidden="true">◖))</span>
+                <span id="listenLabel">Read answer</span>
+              </button>
+            </div>
+            <button id="send" class="send-button" type="submit"><span aria-hidden="true">➤</span> Send <b aria-hidden="true">→</b></button>
+          </div>
+          <div class="composer-footer">
+            <details>
+              <summary>API access (optional)</summary>
+              <input id="token" type="password" aria-label="API token" placeholder="API_TOKEN from .env" autocomplete="off">
+            </details>
+            <span>MedGuide AI can make mistakes. Verify important health information.</span>
+          </div>
+        </form>
+
+        <video id="video" autoplay playsinline aria-label="Camera preview" hidden></video>
+        <div id="cameraActions" class="camera-actions" hidden>
+          <button id="snap" type="button" class="action-button">Capture photo</button>
+          <button id="closeCamera" type="button" class="action-button">Close camera</button>
+        </div>
+        <canvas id="canvas" hidden></canvas>
+      </section>
     </main>
-
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=3"></script>
   </body>
 </html>

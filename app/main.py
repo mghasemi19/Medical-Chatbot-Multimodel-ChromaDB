@@ -193,6 +193,7 @@ async def transcribe(file:UploadFile=File(...),authorization:str|None=Header(def
         # connection timeout is short, which can fail during a slower VPN/proxy handshake.
         client=OpenAI(api_key=settings.openai_api_key, base_url=settings.base_url, timeout=60)
         result=client.audio.transcriptions.create(model='whisper-1',file=audio)
+        #result=client.audio.transcriptions.create(model='gpt-4o-transcribe',file=audio)
         return {'text':result.text}
     
     except Exception as exc:
