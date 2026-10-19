@@ -1,12 +1,14 @@
 # MedGuide AI — LangGraph + ChromaDB + FastAPI
 
-A medical assistant with retrieval from the bundled historical Gale Encyclopedia of Medicine (2002, Volume 1 A–B), optional Tavily fallback, image observations, speech input/output, and a vanilla JavaScript web UI. ChromaDB stores vectors locally; OpenAI creates embeddings and generates answers.
+A medical assistant with retrieval from the medical books, optional Tavily fallback, image observations, speech input/output, and a vanilla JavaScript web UI. ChromaDB stores vectors locally; OpenAI creates embeddings and generates answers.
+
+<img width="1099" height="713" alt="Screenshot 2026-10-19 152723" src="https://github.com/user-attachments/assets/9b68a3c4-054b-45cb-9fe1-bd99b906b551" />
 
 ![Medical AI architecture diagram](docs/Medical%20AI%20Agent%20Architecture%20Infographic.png)
 
 ## Requirements
 
-Python 3.11 or 3.12, an OpenAI API key, and internet access for OpenAI. A Tavily API key is optional and enables web search fallback. This is a tutorial reference implementation, **not** a clinically validated diagnostic system or HIPAA-compliant deployment.
+Python 3.11> , an OpenAI API key, and internet access for OpenAI. A Tavily API key is optional and enables web search fallback. This is a tutorial reference implementation, **not** a clinically validated diagnostic system or HIPAA-compliant deployment.
 
 ## Start
 
